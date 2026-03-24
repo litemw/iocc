@@ -1,7 +1,7 @@
 export type Interface<I = any> = {
-  _name: string;
+  name: string;
   _symbol: symbol;
-  get type(): I;
+  get _type(): I;
 };
 
 export type TypeOf<A extends Interface | Interface[]> = A extends [
@@ -9,10 +9,10 @@ export type TypeOf<A extends Interface | Interface[]> = A extends [
   ...infer R extends Interface[],
 ]
   ? R extends []
-    ? T['type']
-    : T['type'] & TypeOf<R>
+    ? T['_type']
+    : T['_type'] & TypeOf<R>
   : A extends Interface
-  ? A['type']
+  ? A['_type']
   : never;
 
 let interfaceIndex = 1;
@@ -21,9 +21,9 @@ export function defineInterface<I>(name?: string): Interface<I> {
   name = name ?? `interface-${interfaceIndex}`;
   interfaceIndex++;
   return {
-    _name: name,
+    name: name,
     _symbol: Symbol(name),
-    get type(): I {
+    get _type(): I {
       throw ReferenceError('type is not callable');
     },
   };
