@@ -19,8 +19,8 @@
     "build:esm": "bun build lib/index.ts --outfile=dist/index.mjs --packages external --format esm",
     "build": "bun run build.ts",
     "postbuild": "rimraf tsconfig.types.tsbuildinfo",
-    "lint": "bun run eslint lib/**/*.ts",
-    "lint:fix": "bun run lint --fix"
+    "lint": "bun run eslint ./**/*.ts --cache",
+    "lint:fix": "bun run lint --fix --cache"
   },
   "dependencies": {
 
