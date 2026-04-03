@@ -1,43 +1,66 @@
-import { Interface, TypeOf } from './interface';
-import { Scope } from './container';
+import { Interface, TypeOfTuple } from './interface';
 
-export type Component<A extends Interface[] = [], R = any> = {
-  name: string;
-  _symbol: symbol;
-  get _type(): R;
+// For multi interfaces the factory contributes a single element, not the full array.
+type AsConstraint<I extends Interface> = I extends Interface<infer Arr, 'multi'>
+  ? Arr extends (infer E)[]
+    ? E
+    : never
+  : I['_type'];
 
-  scope?: Scope;
-
-  in(scope: Scope): Component<A, R>;
-
-  provide<Providers extends Interface[]>(
-    ...arr: Providers
-  ): Component<[...A, ...Providers], R>;
-
-  as<Ret extends R>(i: Interface): Component<A, R & Ret>;
-
-  <Ret extends R>(cb: (...args: A) => Ret): Component<A, Ret>;
+export type Component<
+  Deps extends readonly Interface[] = readonly Interface[],
+  Ret = unknown,
+> = {
+  readonly name: string;
+  readonly _symbol: symbol;
+  readonly _interfaces: readonly Interface[];
+  readonly _deps: Deps;
+  readonly _factory: (...args: any[]) => Ret | Promise<Ret>;
 };
 
-export type ComponentBuilder<A extends Interface[] = [], R = any> = Component<
-  A,
-  R
-> & {
-  <Ret extends R>(cb: (...args: A) => Ret): Component<A, Ret>;
+export type ComponentBuilder<
+  Deps extends readonly Interface[] = [],
+  AsType = unknown,
+> = {
+  provide<P extends readonly Interface[]>(
+    ...deps: P
+  ): ComponentBuilder<[...Deps, ...P], AsType>;
+  as<I extends Interface>(
+    i: I,
+  ): ComponentBuilder<Deps, AsType & AsConstraint<I>>;
+  <R extends AsType>(
+    factory: (...args: TypeOfTuple<Deps>) => R | Promise<R>,
+  ): Component<Deps, R>;
 };
 
-let componentIndex = 1;
+export function defineComponent(name: string): ComponentBuilder {
+  const _symbol = Symbol(name);
+  return _makeBuilder(name, _symbol, [], []);
+}
 
-export function defineComponent(name?: string): Component {
-  const _name = name ?? `component-${componentIndex}`;
-  componentIndex++;
+function _makeBuilder(
+  name: string,
+  symbol: symbol,
+  deps: Interface[],
+  interfaces: Interface[],
+): ComponentBuilder<any, any> {
+  const builder = function (
+    factory: (...args: any[]) => any,
+  ): Component<any, any> {
+    return {
+      name,
+      _symbol: symbol,
+      _interfaces: interfaces,
+      _deps: deps as any,
+      _factory: factory,
+    };
+  } as ComponentBuilder<any, any>;
 
-  const comp = function () {
-    /**/
-  } as unknown as Component;
+  (builder as any).provide = (...newDeps: Interface[]) =>
+    _makeBuilder(name, symbol, [...deps, ...newDeps], interfaces);
 
-  comp.name = _name;
-  comp._symbol = Symbol(name);
+  (builder as any).as = (i: Interface) =>
+    _makeBuilder(name, symbol, deps, [...interfaces, i]);
 
-  return comp;
+  return builder;
 }
