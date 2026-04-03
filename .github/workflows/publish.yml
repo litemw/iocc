@@ -26,16 +26,11 @@ jobs:
         run: bun test
 
       - name: Build
-        run: |
-          bun run build:dts
-          bun run build:cjs
-          bun run build:esm
+        run:  bun run build
 
       - uses: actions/setup-node@v4
         with:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Publish to npm
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish
