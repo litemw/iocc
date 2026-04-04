@@ -22,9 +22,7 @@
     "lint": "bun run eslint ./**/*.ts --cache",
     "lint:fix": "bun run lint --fix --cache"
   },
-  "dependencies": {
-
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/bun": "1.2.1",
     "@types/node": "20.17.16",
@@ -49,6 +47,9 @@
   "types": "dist/index.d.ts",
   "directories": {
     "lib": "lib"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "exports": {
     "import": "./dist/index.mjs",
