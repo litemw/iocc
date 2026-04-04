@@ -1,11 +1,12 @@
 import { Interface, TypeOfTuple } from './interface';
 
 // For multi interfaces the factory contributes a single element, not the full array.
-type AsConstraint<I extends Interface> = I extends Interface<infer Arr, 'multi'>
-  ? Arr extends (infer E)[]
-    ? E
-    : never
-  : I['_type'];
+type AsConstraint<I extends Interface> =
+  I extends Interface<infer Arr, 'multi'>
+    ? Arr extends (infer E)[]
+      ? E
+      : never
+    : I['_type'];
 
 export type Component<
   Deps extends readonly Interface[] = readonly Interface[],
