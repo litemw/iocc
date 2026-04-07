@@ -1,10 +1,11 @@
 import { Interface } from './interface';
-import { Component } from './component';
+import { Component, Scope } from './component';
 
 type Entry = {
   readonly name: string;
   readonly deps: readonly Interface[];
   readonly factory: (...args: any[]) => any;
+  readonly scope: Scope;
 };
 
 export class Container {
@@ -17,6 +18,7 @@ export class Container {
       name: component.name,
       deps: component._deps,
       factory: component._factory,
+      scope: component._scope,
     };
 
     for (const iface of component._interfaces) {
@@ -37,7 +39,7 @@ export class Container {
 
   supply<I extends Interface>(iface: I, value: Awaited<I['_type']>): this {
     if (iface._kind === 'multi') {
-      const entry: Entry = { name: iface.name, deps: [], factory: () => value };
+      const entry: Entry = { name: iface.name, deps: [], factory: () => value, scope: 'singleton' };
       const list = this._multi.get(iface._symbol) ?? [];
       list.push(entry);
       this._multi.set(iface._symbol, list);
@@ -45,7 +47,7 @@ export class Container {
       if (this._singular.has(iface._symbol)) {
         throw new Error(`Interface "${iface.name}" is already registered`);
       }
-      const entry: Entry = { name: iface.name, deps: [], factory: () => value };
+      const entry: Entry = { name: iface.name, deps: [], factory: () => value, scope: 'singleton' };
       this._singular.set(iface._symbol, entry);
       this._cache.set(entry, Promise.resolve(value));
     }
@@ -76,8 +78,10 @@ export class Container {
   }
 
   private _resolveEntry(entry: Entry, chain: Map<Entry, string>): Promise<any> {
-    const cached = this._cache.get(entry);
-    if (cached !== undefined) return cached;
+    if (entry.scope === 'singleton') {
+      const cached = this._cache.get(entry);
+      if (cached !== undefined) return cached;
+    }
 
     if (chain.has(entry)) {
       const path = [...chain.values(), entry.name].join(' → ');
@@ -90,7 +94,10 @@ export class Container {
       [...entry.deps].map((dep) => this._resolve(dep, nextChain)),
     ).then((args) => entry.factory(...args));
 
-    this._cache.set(entry, promise);
+    if (entry.scope === 'singleton') {
+      this._cache.set(entry, promise);
+    }
+
     return promise;
   }
 }

@@ -6,6 +6,7 @@ Type-safe IoC container for the LiteMW ecosystem, inspired by [dig](https://gith
 - **Type-safe** — `get(IFoo)` returns `Foo`, no casts
 - **Async-first** — factories can be `async`, `get()` always returns `Promise<T>`
 - **Singleton by default** — instances are created once and cached
+- **Scoped** — per-component lifecycle: `singleton` or `transient`
 
 ## Install
 
@@ -92,6 +93,7 @@ defineComponent('name')
 
 - `.provide(...interfaces)` — declares dependencies; factory args match the declared order
 - `.as(interface)` — declares implemented interfaces; TypeScript enforces the return type
+- `.singleton()` / `.transient()` — sets the lifecycle scope (default: `singleton`)
 - The factory can return `T` or `Promise<T>`
 
 ### `Container`
@@ -154,6 +156,36 @@ const container = new Container()
 ```
 
 If no implementations are registered, `get(IPlugin.multi)` returns `[]`.
+
+## Scopes
+
+Every component has a lifecycle scope that controls when the factory is called.
+
+| Scope | Behaviour |
+|---|---|
+| `singleton` | Factory is called once; the result is cached and reused on every `get()` call. **Default.** |
+| `transient` | Factory is called on every `get()` call; no caching. |
+
+```ts
+// singleton (default) — one shared instance
+const dbComponent = defineComponent('db')
+  .as(IDatabase)
+  (async () => {
+    const db = new Database();
+    await db.connect();
+    return db;
+  });
+
+// transient — new instance on every get()
+const requestComponent = defineComponent('request')
+  .as(IRequest)
+  .transient()
+  (() => new Request());
+```
+
+`.singleton()` and `.transient()` can be placed anywhere in the builder chain before the factory call.
+
+> **Note:** `supply()` always behaves as `singleton`.
 
 ## Supply
 

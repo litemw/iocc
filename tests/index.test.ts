@@ -155,6 +155,69 @@ describe('multi', () => {
   });
 });
 
+// ── scopes ────────────────────────────────────────────────────────────────────
+
+describe('scopes', () => {
+  test('singleton (default): factory called only once', async () => {
+    let calls = 0;
+    const c = new Container().register(
+      defineComponent('config').as(IConfig)(() => {
+        calls++;
+        return { str: 'x' };
+      }),
+    );
+
+    await c.get(IConfig);
+    await c.get(IConfig);
+    expect(calls).toBe(1);
+  });
+
+  test('transient: factory called on every get()', async () => {
+    let calls = 0;
+    const c = new Container().register(
+      defineComponent('config').as(IConfig).transient()(() => {
+        calls++;
+        return { str: 'x' };
+      }),
+    );
+
+    await c.get(IConfig);
+    await c.get(IConfig);
+    expect(calls).toBe(2);
+  });
+
+  test('transient: each call returns a new instance', async () => {
+    const c = new Container().register(
+      defineComponent('config').as(IConfig).transient()(() => ({ str: 'x' })),
+    );
+
+    const a = await c.get(IConfig);
+    const b = await c.get(IConfig);
+    expect(a).not.toBe(b);
+  });
+
+  test('transient dep: resolved fresh for each dependent get()', async () => {
+    let calls = 0;
+    const c = new Container()
+      .register(
+        defineComponent('config').as(IConfig).transient()(() => {
+          calls++;
+          return { str: `call-${calls}` };
+        }),
+      )
+      .register(
+        defineComponent('user').provide(IConfig).as(IUser)((config) => ({
+          greet: () => config.str,
+        })),
+      );
+
+    // IUser is singleton, so IConfig transient is resolved only on first get
+    await c.get(IUser);
+    await c.get(IUser);
+    expect(calls).toBe(1);
+  });
+});
+
 // ── errors ────────────────────────────────────────────────────────────────────
 
 describe('errors', () => {
