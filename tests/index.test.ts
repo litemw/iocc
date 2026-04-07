@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { Container, defineComponent, defineInterface } from '../lib';
+import { Container, defineComponent, defineInterface, IContext } from '../lib';
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -215,6 +215,76 @@ describe('scopes', () => {
     await c.get(IUser);
     await c.get(IUser);
     expect(calls).toBe(1);
+  });
+});
+
+// ── context ───────────────────────────────────────────────────────────────────
+
+describe('context', () => {
+  test('requester is undefined at top-level get()', async () => {
+    const c = new Container().register(
+      defineComponent('config').provide(IContext).as(IConfig)((ctx) => ({
+        str: ctx.requester?.name ?? 'none',
+      })),
+    );
+
+    const config = await c.get(IConfig);
+    expect(config.str).toBe('none');
+  });
+
+  test('requester is the depending component', async () => {
+    let capturedCtx: any;
+    const c = new Container()
+      .register(
+        defineComponent('config').provide(IContext).as(IConfig)((ctx) => {
+          capturedCtx = ctx;
+          return { str: 'x' };
+        }),
+      )
+      .register(
+        defineComponent('user').provide(IConfig).as(IUser)((config) => ({
+          greet: () => config.str,
+        })),
+      );
+
+    await c.get(IUser);
+    expect(capturedCtx.requester?.name).toBe('user');
+  });
+
+  test('chain contains components in resolution order', async () => {
+    let capturedCtx: any;
+    const c = new Container()
+      .register(
+        defineComponent('config').provide(IContext).as(IConfig)((ctx) => {
+          capturedCtx = ctx;
+          return { str: 'x' };
+        }),
+      )
+      .register(
+        defineComponent('user').provide(IConfig).as(IUser)((config) => ({
+          greet: () => config.str,
+        })),
+      );
+
+    await c.get(IUser);
+    expect(capturedCtx.chain.map((c: any) => c.name)).toEqual(['user']);
+  });
+
+  test('transient gets fresh context on each get()', async () => {
+    const contexts: any[] = [];
+    const c = new Container().register(
+      defineComponent('config').provide(IContext).as(IConfig).transient()(
+        (ctx) => {
+          contexts.push(ctx);
+          return { str: 'x' };
+        },
+      ),
+    );
+
+    await c.get(IConfig);
+    await c.get(IConfig);
+    expect(contexts).toHaveLength(2);
+    expect(contexts[0]).not.toBe(contexts[1]);
   });
 });
 
