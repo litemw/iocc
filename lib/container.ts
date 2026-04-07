@@ -39,7 +39,12 @@ export class Container {
 
   supply<I extends Interface>(iface: I, value: Awaited<I['_type']>): this {
     if (iface._kind === 'multi') {
-      const entry: Entry = { name: iface.name, deps: [], factory: () => value, scope: 'singleton' };
+      const entry: Entry = {
+        name: iface.name,
+        deps: [],
+        factory: () => value,
+        scope: 'singleton',
+      };
       const list = this._multi.get(iface._symbol) ?? [];
       list.push(entry);
       this._multi.set(iface._symbol, list);
@@ -47,7 +52,12 @@ export class Container {
       if (this._singular.has(iface._symbol)) {
         throw new Error(`Interface "${iface.name}" is already registered`);
       }
-      const entry: Entry = { name: iface.name, deps: [], factory: () => value, scope: 'singleton' };
+      const entry: Entry = {
+        name: iface.name,
+        deps: [],
+        factory: () => value,
+        scope: 'singleton',
+      };
       this._singular.set(iface._symbol, entry);
       this._cache.set(entry, Promise.resolve(value));
     }
