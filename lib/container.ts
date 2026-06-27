@@ -99,7 +99,7 @@ export class Container {
     const nextChain = new Map([...chain, [entry, entry.name]]);
 
     const promise = Promise.all(
-      [...entry.deps].map((dep) => this._resolve(dep, nextChain)),
+      entry.deps.map((dep) => this._resolve(dep, nextChain)),
     ).then((args) => entry.factory(...args));
 
     this._cache.set(entry, promise);
