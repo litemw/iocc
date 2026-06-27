@@ -8,8 +8,6 @@ type AsConstraint<I extends Interface> =
       : never
     : I['_type'];
 
-export type Scope = 'singleton' | 'transient';
-
 export type Component<
   Deps extends readonly Interface[] = readonly Interface[],
   Ret = unknown,
@@ -19,7 +17,6 @@ export type Component<
   readonly _interfaces: readonly Interface[];
   readonly _deps: Deps;
   readonly _factory: (...args: any[]) => Ret | Promise<Ret>;
-  readonly _scope: Scope;
 };
 
 export type ComponentBuilder<
@@ -32,8 +29,6 @@ export type ComponentBuilder<
   as<I extends Interface>(
     i: I,
   ): ComponentBuilder<Deps, AsType & AsConstraint<I>>;
-  singleton(): ComponentBuilder<Deps, AsType>;
-  transient(): ComponentBuilder<Deps, AsType>;
   <R extends AsType>(
     factory: (...args: TypeOfTuple<Deps>) => R | Promise<R>,
   ): Component<Deps, R>;
@@ -41,7 +36,7 @@ export type ComponentBuilder<
 
 export function defineComponent(name: string): ComponentBuilder {
   const _symbol = Symbol(name);
-  return _makeBuilder(name, _symbol, [], [], 'singleton');
+  return _makeBuilder(name, _symbol, [], []);
 }
 
 function _makeBuilder(
@@ -49,7 +44,6 @@ function _makeBuilder(
   symbol: symbol,
   deps: Interface[],
   interfaces: Interface[],
-  scope: Scope,
 ): ComponentBuilder<any, any> {
   const builder = function (
     factory: (...args: any[]) => any,
@@ -60,21 +54,14 @@ function _makeBuilder(
       _interfaces: interfaces,
       _deps: deps as any,
       _factory: factory,
-      _scope: scope,
     };
   } as ComponentBuilder<any, any>;
 
   (builder as any).provide = (...newDeps: Interface[]) =>
-    _makeBuilder(name, symbol, [...deps, ...newDeps], interfaces, scope);
+    _makeBuilder(name, symbol, [...deps, ...newDeps], interfaces);
 
   (builder as any).as = (i: Interface) =>
-    _makeBuilder(name, symbol, deps, [...interfaces, i], scope);
-
-  (builder as any).singleton = () =>
-    _makeBuilder(name, symbol, deps, interfaces, 'singleton');
-
-  (builder as any).transient = () =>
-    _makeBuilder(name, symbol, deps, interfaces, 'transient');
+    _makeBuilder(name, symbol, deps, [...interfaces, i]);
 
   return builder;
 }
