@@ -1,6 +1,6 @@
 {
   "name": "@litemw/iocc",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "author": "VladDotH",
   "license": "MIT",
   "description": "IOC container for litemw ecosystem",
