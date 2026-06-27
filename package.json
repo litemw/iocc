@@ -14,11 +14,11 @@
   },
   "homepage": "https://github.com/litemw/iocc#readme",
   "scripts": {
-    "build:dts": "tsc --build tsconfig.build.json",
+    "build:dts": "tsc --build tsconfig.build.json --force",
     "build:cjs": "bun build lib/index.ts --outfile=dist/index.js --packages external --format cjs\n",
     "build:esm": "bun build lib/index.ts --outfile=dist/index.mjs --packages external --format esm",
     "build": "bun run build.ts",
-    "postbuild": "rimraf tsconfig.types.tsbuildinfo",
+    "postbuild": "rimraf tsconfig.build.tsbuildinfo",
     "lint": "bun run eslint ./**/*.ts --cache",
     "lint:fix": "bun run lint --fix --cache",
     "prepare": "husky"
