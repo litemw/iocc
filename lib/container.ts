@@ -1,5 +1,10 @@
 import { Interface } from './interface';
 import { Component } from './component';
+import {
+  CircularDependencyError,
+  InterfaceAlreadyRegisteredError,
+  InterfaceNotRegisteredError,
+} from './errors';
 
 type Entry = {
   readonly name: string;
@@ -26,7 +31,7 @@ export class Container {
         this._multi.set(iface._symbol, list);
       } else {
         if (this._singular.has(iface._symbol)) {
-          throw new Error(`Interface "${iface.name}" is already registered`);
+          throw new InterfaceAlreadyRegisteredError(iface.name);
         }
         this._singular.set(iface._symbol, entry);
       }
@@ -47,7 +52,7 @@ export class Container {
       this._multi.set(iface._symbol, list);
     } else {
       if (this._singular.has(iface._symbol)) {
-        throw new Error(`Interface "${iface.name}" is already registered`);
+        throw new InterfaceAlreadyRegisteredError(iface.name);
       }
       const entry: Entry = {
         name: iface.name,
@@ -77,7 +82,7 @@ export class Container {
 
     if (!entry) {
       if (kind === 'optional') return Promise.resolve(undefined);
-      throw new Error(`Interface "${iface.name}" is not registered`);
+      throw new InterfaceNotRegisteredError(iface.name);
     }
 
     return this._resolveEntry(entry, chain);
@@ -88,8 +93,7 @@ export class Container {
     if (cached !== undefined) return cached;
 
     if (chain.has(entry)) {
-      const path = [...chain.values(), entry.name].join(' → ');
-      throw new Error(`Circular dependency detected: ${path}`);
+      throw new CircularDependencyError([...chain.values(), entry.name]);
     }
 
     const nextChain = new Map([...chain, [entry, entry.name]]);

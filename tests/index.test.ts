@@ -1,5 +1,12 @@
 import { describe, expect, test } from 'bun:test';
-import { Container, defineComponent, defineInterface } from '../lib';
+import {
+  CircularDependencyError,
+  Container,
+  InterfaceAlreadyRegisteredError,
+  InterfaceNotRegisteredError,
+  defineComponent,
+  defineInterface,
+} from '../lib';
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -160,7 +167,7 @@ describe('multi', () => {
 describe('errors', () => {
   test('throws when interface not registered', () => {
     const c = new Container();
-    expect(() => c.get(IConfig)).toThrow('not registered');
+    expect(() => c.get(IConfig)).toThrow(InterfaceNotRegisteredError);
   });
 
   test('throws on duplicate singular registration', () => {
@@ -168,7 +175,7 @@ describe('errors', () => {
       new Container()
         .register(defineComponent('a').as(IConfig)(() => ({ str: 'a' })))
         .register(defineComponent('b').as(IConfig)(() => ({ str: 'b' }))),
-    ).toThrow('already registered');
+    ).toThrow(InterfaceAlreadyRegisteredError);
   });
 
   test('throws on duplicate supply', () => {
@@ -176,7 +183,7 @@ describe('errors', () => {
       new Container()
         .supply(IConfig, { str: 'a' })
         .supply(IConfig, { str: 'b' }),
-    ).toThrow('already registered');
+    ).toThrow(InterfaceAlreadyRegisteredError);
   });
 
   test('detects circular dependency', () => {
@@ -188,6 +195,6 @@ describe('errors', () => {
         .register(defineComponent('a').provide(IB).as(IA)(() => ({})))
         .register(defineComponent('b').provide(IA).as(IB)(() => ({})))
         .get(IA),
-    ).toThrow('Circular dependency');
+    ).toThrow(CircularDependencyError);
   });
 });

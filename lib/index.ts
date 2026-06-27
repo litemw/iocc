@@ -10,3 +10,10 @@ export type { Component, ComponentBuilder } from './component';
 export { defineComponent } from './component';
 
 export { Container } from './container';
+
+export {
+  CircularDependencyError,
+  ContainerError,
+  InterfaceAlreadyRegisteredError,
+  InterfaceNotRegisteredError,
+} from './errors';
