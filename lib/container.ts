@@ -40,32 +40,6 @@ export class Container {
     return this;
   }
 
-  supply<I extends Interface>(iface: I, value: Awaited<I['_type']>): this {
-    if (iface._kind === 'multi') {
-      const entry: Entry = {
-        name: iface.name,
-        deps: [],
-        factory: () => value,
-      };
-      const list = this._multi.get(iface._symbol) ?? [];
-      list.push(entry);
-      this._multi.set(iface._symbol, list);
-    } else {
-      if (this._singular.has(iface._symbol)) {
-        throw new InterfaceAlreadyRegisteredError(iface.name);
-      }
-      const entry: Entry = {
-        name: iface.name,
-        deps: [],
-        factory: () => value,
-      };
-      this._singular.set(iface._symbol, entry);
-      this._cache.set(entry, Promise.resolve(value));
-    }
-
-    return this;
-  }
-
   get<I extends Interface>(iface: I): Promise<I['_type']> {
     return this._resolve(iface, new Map());
   }

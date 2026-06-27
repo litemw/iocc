@@ -55,27 +55,6 @@ describe('basic', () => {
   });
 });
 
-// ── supply ───────────────────────────────────────────────────────────────────
-
-describe('supply', () => {
-  test('resolves a supplied value', async () => {
-    const c = new Container().supply(IConfig, { str: 'supplied' });
-    const config = await c.get(IConfig);
-    expect(config.str).toBe('supplied');
-  });
-
-  test('supplied value used as dep', async () => {
-    const c = new Container().supply(IConfig, { str: 'supplied' }).register(
-      defineComponent('user').provide(IConfig).as(IUser)((config) => ({
-        greet: () => config.str,
-      })),
-    );
-
-    const user = await c.get(IUser);
-    expect(user.greet()).toBe('supplied');
-  });
-});
-
 // ── async factory ────────────────────────────────────────────────────────────
 
 describe('async', () => {
@@ -150,7 +129,9 @@ describe('multi', () => {
 
   test('multi entry receives deps', async () => {
     const c = new Container()
-      .supply(IConfig, { str: 'prefix' })
+      .register(
+        defineComponent('config').as(IConfig)(() => ({ str: 'prefix' })),
+      )
       .register(
         defineComponent('pluginA').provide(IConfig).as(IPlugin.multi)(
           (config) => ({ name: `${config.str}-A` }),
@@ -175,14 +156,6 @@ describe('errors', () => {
       new Container()
         .register(defineComponent('a').as(IConfig)(() => ({ str: 'a' })))
         .register(defineComponent('b').as(IConfig)(() => ({ str: 'b' }))),
-    ).toThrow(InterfaceAlreadyRegisteredError);
-  });
-
-  test('throws on duplicate supply', () => {
-    expect(() =>
-      new Container()
-        .supply(IConfig, { str: 'a' })
-        .supply(IConfig, { str: 'b' }),
     ).toThrow(InterfaceAlreadyRegisteredError);
   });
 

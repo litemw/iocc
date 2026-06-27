@@ -102,16 +102,13 @@ const container = new Container();
 // Register a component
 container.register(component);  // throws if the interface is already registered
 
-// Provide a pre-built value (no factory)
-container.supply(IConfig, { dbUrl: '...' });
-
 // Resolve
 const value = await container.get(IFoo);           // Promise<Foo>
 const value = await container.get(IFoo.optional);  // Promise<Foo | undefined>
 const values = await container.get(IFoo.multi);    // Promise<Foo[]>
 ```
 
-`register()` and `supply()` return `this`, so calls can be chained.
+`register()` returns `this`, so calls can be chained.
 
 ## Optional dependencies
 
@@ -171,13 +168,17 @@ const createRequest = await container.get(ICreateRequest);
 const request = createRequest();
 ```
 
-## Supply
+## Values
 
-Provide a pre-built value without a factory — useful for configuration objects and test doubles:
+Provide a value with a component factory — useful for configuration objects and test doubles:
 
 ```ts
+const configComponent = defineComponent('config')
+  .as(IConfig)
+  (() => ({ dbUrl: process.env.DATABASE_URL }));
+
 const container = new Container()
-  .supply(IConfig, { dbUrl: process.env.DATABASE_URL })
+  .register(configComponent)
   .register(databaseComponent)
   .register(userServiceComponent);
 ```
@@ -187,7 +188,7 @@ const container = new Container()
 | Situation | Error |
 |---|---|
 | `get()` for an unregistered interface | `Interface "Foo" is not registered` |
-| `register()` or `supply()` duplicate | `Interface "Foo" is already registered` |
+| `register()` duplicate | `Interface "Foo" is already registered` |
 | Circular dependency | `Circular dependency detected: A → B → A` |
 
 ## License
