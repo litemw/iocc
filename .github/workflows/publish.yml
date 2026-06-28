@@ -25,4 +25,4 @@ jobs:
         run:  bun run build
 
       - name: Publish to npm
-        run: bun publish --tolerate-republish
+        run: npm publish --provenance --access public
