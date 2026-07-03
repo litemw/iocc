@@ -26,19 +26,19 @@ bun add @litemw/iocc
 ## Quick start
 
 ```ts
-import { Container, defineComponent, defineInterface } from '@litemw/iocc';
+import { Container, defComp, defIntf } from '@litemw/iocc';
 
 // 1. Define typed injection keys
-const IConfig = defineInterface<{ dbUrl: string }>('Config');
-const IDatabase = defineInterface<Database>('Database');
-const IUserService = defineInterface<UserService>('UserService');
+const IConfig = defIntf<{ dbUrl: string }>('Config');
+const IDatabase = defIntf<Database>('Database');
+const IUserService = defIntf<UserService>('UserService');
 
 // 2. Define components
-const configComponent = defineComponent('config')
+const configComponent = defComp('config')
   .as(IConfig)
   (() => ({ dbUrl: 'postgres://localhost/mydb' }));
 
-const databaseComponent = defineComponent('database')
+const databaseComponent = defComp('database')
   .provide(IConfig)           // declare dependencies — order = factory arg order
   .as(IDatabase)
   (async (config) => {        // factory can be async
@@ -47,7 +47,7 @@ const databaseComponent = defineComponent('database')
     return db;
   });
 
-const userServiceComponent = defineComponent('userService')
+const userServiceComponent = defComp('userService')
   .provide(IConfig, IDatabase)
   .as(IUserService)
   ((config, db) => new UserService(config, db));
@@ -64,27 +64,36 @@ const userService = await container.get(IUserService);
 
 ## API
 
-### `defineInterface<T>(name)`
+### `defIntf<T>(name)`
 
 Creates a typed injection key. The name is used in error messages.
 
 ```ts
-const ILogger = defineInterface<Logger>('Logger');
+const ILogger = defIntf<Logger>('Logger');
 ```
 
 Every interface has two derived variants:
 
 ```ts
-ILogger.optional  // Interface<Logger | undefined> — resolves to undefined if not registered
-ILogger.multi     // Interface<Logger[]>           — collects all registered implementations
+ILogger.optional  // optional Logger — resolves to undefined if not registered
+ILogger.multi     // multi Logger    — collects all registered implementations
 ```
 
-### `defineComponent(name)`
+The derived variants keep the same implementation type (`Logger`). The container
+uses the variant kind when resolving:
+
+```ts
+await container.get(ILogger);          // Logger
+await container.get(ILogger.optional); // Logger | undefined
+await container.get(ILogger.multi);    // Logger[]
+```
+
+### `defComp(name)`
 
 Returns a builder for declaring a component.
 
 ```ts
-defineComponent('name')
+defComp('name')
   .provide(IDep1, IDep2.optional, IDep3.multi)  // dependencies
   .as(IResult)                                   // what it implements (can chain multiple)
   ((dep1, dep2, dep3) => new Impl(dep1, dep2, dep3))
@@ -93,6 +102,16 @@ defineComponent('name')
 - `.provide(...interfaces)` — declares dependencies; factory args match the declared order
 - `.as(interface)` — declares implemented interfaces; TypeScript enforces the return type
 - The factory can return `T` or `Promise<T>`
+
+You can also add an interface after a component is created:
+
+```ts
+const component = defComp('logger')(() => new ConsoleLogger());
+
+container.register(component.as(ILogger));
+```
+
+This returns a new component descriptor with the extra interface attached.
 
 ### `Container`
 
@@ -113,9 +132,9 @@ const values = await container.get(IFoo.multi);    // Promise<Foo[]>
 ## Optional dependencies
 
 ```ts
-const ILogger = defineInterface<Logger>('Logger');
+const ILogger = defIntf<Logger>('Logger');
 
-const serviceComponent = defineComponent('service')
+const serviceComponent = defComp('service')
   .provide(ILogger.optional)
   ((logger) => {
     // logger is Logger | undefined
@@ -131,13 +150,13 @@ If `ILogger` is not registered, `logger` will be `undefined`. No error is thrown
 Register multiple implementations under the same interface:
 
 ```ts
-const IPlugin = defineInterface<Plugin>('Plugin');
+const IPlugin = defIntf<Plugin>('Plugin');
 
 // Each component contributes one element to the group
-const pluginA = defineComponent('pluginA').as(IPlugin.multi)(() => new PluginA());
-const pluginB = defineComponent('pluginB').as(IPlugin.multi)(() => new PluginB());
+const pluginA = defComp('pluginA').as(IPlugin.multi)(() => new PluginA());
+const pluginB = defComp('pluginB').as(IPlugin.multi)(() => new PluginB());
 
-const appComponent = defineComponent('app')
+const appComponent = defComp('app')
   .provide(IPlugin.multi)
   ((plugins) => {
     // plugins: Plugin[]
@@ -152,15 +171,18 @@ const container = new Container()
 
 If no implementations are registered, `get(IPlugin.multi)` returns `[]`.
 
+Even though `get(IPlugin.multi)` resolves to `Plugin[]`, a component registered
+with `.as(IPlugin.multi)` still returns a single `Plugin`.
+
 ## Factories as dependencies
 
 Components are cached after the first resolution. If you need a fresh value on demand,
 provide a factory function and call it from the consumer:
 
 ```ts
-const ICreateRequest = defineInterface<() => Request>('CreateRequest');
+const ICreateRequest = defIntf<() => Request>('CreateRequest');
 
-const createRequestComponent = defineComponent('createRequest')
+const createRequestComponent = defComp('createRequest')
   .as(ICreateRequest)
   (() => () => new Request());
 
@@ -173,7 +195,7 @@ const request = createRequest();
 Provide a value with a component factory — useful for configuration objects and test doubles:
 
 ```ts
-const configComponent = defineComponent('config')
+const configComponent = defComp('config')
   .as(IConfig)
   (() => ({ dbUrl: process.env.DATABASE_URL }));
 

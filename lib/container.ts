@@ -1,4 +1,4 @@
-import { Interface } from './interface';
+import { IToken, TypeOf } from './interface';
 import { Component } from './component';
 import {
   CircularDependencyError,
@@ -8,7 +8,7 @@ import {
 
 type Entry = {
   readonly name: string;
-  readonly deps: readonly Interface[];
+  readonly deps: readonly IToken[];
   readonly factory: (...args: any[]) => any;
 };
 
@@ -20,32 +20,32 @@ export class Container {
   register(component: Component): this {
     const entry: Entry = {
       name: component.name,
-      deps: component._deps,
-      factory: component._factory,
+      deps: component.deps,
+      factory: component.factory,
     };
 
-    for (const iface of component._interfaces) {
-      if (iface._kind === 'multi') {
-        const list = this._multi.get(iface._symbol) ?? [];
+    for (const iface of component.interfaces) {
+      if (iface.kind === 'multi') {
+        const list = this._multi.get(iface.key) ?? [];
         list.push(entry);
-        this._multi.set(iface._symbol, list);
+        this._multi.set(iface.key, list);
       } else {
-        if (this._singular.has(iface._symbol)) {
+        if (this._singular.has(iface.key)) {
           throw new InterfaceAlreadyRegisteredError(iface.name);
         }
-        this._singular.set(iface._symbol, entry);
+        this._singular.set(iface.key, entry);
       }
     }
 
     return this;
   }
 
-  get<I extends Interface>(iface: I): Promise<I['_type']> {
+  get<I extends IToken>(iface: I): Promise<TypeOf<I>> {
     return this._resolve(iface, new Map());
   }
 
-  private _resolve(iface: Interface, chain: Map<Entry, string>): Promise<any> {
-    const { _symbol: sym, _kind: kind } = iface;
+  private _resolve(iface: IToken, chain: Map<Entry, string>): Promise<any> {
+    const { key: sym, kind: kind } = iface;
 
     if (kind === 'multi') {
       const entries = this._multi.get(sym) ?? [];

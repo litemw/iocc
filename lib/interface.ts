@@ -1,52 +1,58 @@
-export type InterfaceKind = 'singular' | 'multi' | 'optional';
+export type IKind = 'singular' | 'multi' | 'optional';
 
-export type Interface<I = any, K extends InterfaceKind = InterfaceKind> = {
+export type IToken<I = any, K extends IKind = IKind> = {
   readonly name: string;
-  readonly _symbol: symbol;
-  readonly _kind: K;
+  readonly key: symbol;
+  readonly kind: K;
   get _type(): I;
-  readonly multi: Interface<I[], 'multi'>;
-  readonly optional: Interface<I | undefined, 'optional'>;
 };
 
-export type TypeOf<I extends Interface> = I['_type'];
-
-export type TypeOfTuple<T extends readonly Interface[]> = {
-  [K in keyof T]: T[K] extends Interface<infer I> ? I : never;
+export type Interface<I = any, K extends IKind = IKind> = IToken<I, K> & {
+  readonly multi: Omit<Interface<I, 'multi'>, 'multi' | 'optional'>;
+  readonly optional: Omit<Interface<I, 'optional'>, 'multi' | 'optional'>;
 };
 
-export function defineInterface<I>(name: string): Interface<I, 'singular'> {
-  return _makeInterface<I, 'singular'>(name, Symbol(name), 'singular');
+export type ImplOf<I extends IToken> = I['_type'];
+
+export type TypeOf<I extends IToken> =
+  I extends IToken<infer T, 'multi'>
+    ? T[]
+    : I extends IToken<infer T, 'optional'>
+      ? T | undefined
+      : I['_type'];
+
+export type TypeOfTuple<T extends readonly IToken[]> = {
+  [K in keyof T]: T[K] extends IToken ? TypeOf<T[K]> : never;
+};
+
+export function defIntf<I>(name: string): Interface<I, 'singular'> {
+  return mkIntf<I>(name, Symbol(name));
 }
 
-function _makeInterface<I, K extends InterfaceKind>(
-  name: string,
-  symbol: symbol,
-  kind: K,
-): Interface<I, K> {
-  let _multi: Interface<I[], 'multi'> | undefined;
-  let _optional: Interface<I | undefined, 'optional'> | undefined;
-
+function mkIntf<I>(name: string, symbol: symbol): Interface<I, 'singular'> {
   return {
     name,
-    _symbol: symbol,
-    _kind: kind,
+    key: symbol,
+    kind: 'singular',
     get _type(): I {
       throw new ReferenceError('_type is not callable');
     },
-    get multi(): Interface<I[], 'multi'> {
-      return (_multi ??= _makeInterface<I[], 'multi'>(
-        `${name}[]`,
-        symbol,
-        'multi',
-      ));
-    },
-    get optional(): Interface<I | undefined, 'optional'> {
-      return (_optional ??= _makeInterface<I | undefined, 'optional'>(
-        `${name}?`,
-        symbol,
-        'optional',
-      ));
+    multi: mkIntfBase<I, 'multi'>(`${name}[]`, symbol, 'multi'),
+    optional: mkIntfBase<I, 'optional'>(`${name}?`, symbol, 'optional'),
+  };
+}
+
+function mkIntfBase<I, K extends IKind>(
+  name: string,
+  symbol: symbol,
+  kind: K,
+): IToken<I, K> {
+  return {
+    name,
+    key: symbol,
+    kind: kind,
+    get _type(): I {
+      throw new ReferenceError('_type is not callable');
     },
   };
 }
