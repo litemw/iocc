@@ -1,27 +1,25 @@
-import { ImplOf, IToken, TypeOfTuple } from './interface';
+import { ImplOf, Token, TypeOfTuple } from './token';
 
-type IntfAssert<Ret, I extends IToken> = Ret extends ImplOf<I> ? I : never;
+type IntfAssert<Ret, I extends Token> = Ret extends ImplOf<I> ? I : never;
 
 export type Component<
-  Deps extends readonly IToken[] = readonly IToken[],
+  Deps extends readonly Token[] = readonly Token[],
   Ret = unknown,
-> = {
-  readonly name: string;
-  readonly key: symbol;
-  readonly interfaces: readonly IToken[];
+> = Token<Ret, 'singular'> & {
+  readonly interfaces: readonly Token[];
   readonly deps: Deps;
   readonly factory: (...args: any[]) => Ret | Promise<Ret>;
-  as<I extends IToken>(i: IntfAssert<Ret, I>): Component<Deps, Ret>;
+  as<I extends Token>(i: IntfAssert<Ret, I>): Component<Deps, Ret>;
 };
 
 export type ComponentBuilder<
-  Deps extends readonly IToken[] = [],
+  Deps extends readonly Token[] = [],
   AsType = unknown,
 > = {
-  provide<P extends readonly IToken[]>(
+  provide<P extends readonly Token[]>(
     ...deps: P
   ): ComponentBuilder<[...Deps, ...P], AsType>;
-  as<I extends IToken>(i: I): ComponentBuilder<Deps, AsType & ImplOf<I>>;
+  as<I extends Token>(i: I): ComponentBuilder<Deps, AsType & ImplOf<I>>;
   <R extends AsType>(
     factory: (...args: TypeOfTuple<Deps>) => R | Promise<R>,
   ): Component<Deps, R>;
@@ -35,8 +33,8 @@ export function defComp(name: string): ComponentBuilder {
 function mkCompBuilder(
   name: string,
   symbol: symbol,
-  deps: IToken[],
-  interfaces: IToken[],
+  deps: Token[],
+  interfaces: Token[],
 ): ComponentBuilder<any, any> {
   const builder = function (
     factory: (...args: any[]) => any,
@@ -44,28 +42,39 @@ function mkCompBuilder(
     return mkComp(name, symbol, interfaces, deps, factory);
   } as ComponentBuilder<any, any>;
 
-  (builder as any).provide = (...newDeps: IToken[]) =>
+  (builder as any).provide = (...newDeps: Token[]) =>
     mkCompBuilder(name, symbol, [...deps, ...newDeps], interfaces);
 
-  (builder as any).as = (i: IToken) =>
+  (builder as any).as = (i: Token) =>
     mkCompBuilder(name, symbol, deps, [...interfaces, i]);
 
   return builder;
 }
 
-function mkComp<Deps extends readonly IToken[], Ret>(
+function mkComp<Deps extends readonly Token[], Ret>(
   name: string,
   symbol: symbol,
-  interfaces: readonly IToken[],
+  interfaces: readonly Token[],
   deps: Deps,
   factory: (...args: any[]) => Ret | Promise<Ret>,
 ): Component<Deps, Ret> {
-  return {
+  const component: Component<Deps, Ret> = {
     name,
     key: symbol,
-    interfaces: interfaces,
+    kind: 'singular' as const,
+    get _type(): Ret {
+      throw new ReferenceError('_type is not callable');
+    },
+    interfaces: [] as readonly Token[],
     deps: deps,
     factory: factory,
     as: (i) => mkComp(name, symbol, [...interfaces, i], deps, factory),
   };
+
+  (component as { interfaces: readonly Token[] }).interfaces = [
+    component,
+    ...interfaces,
+  ];
+
+  return component;
 }

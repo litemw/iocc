@@ -19,8 +19,9 @@ bun add @litemw/iocc
 
 | Concept | Description |
 |---|---|
-| `Interface<T>` | Typed injection key — identifies a dependency by symbol, carries type info |
-| `Component` | A provider: declares its dependencies and a factory that creates the value |
+| `Token<T>` | Typed injection key — identifies a dependency by symbol, carries type info |
+| `Interface<T>` | Named token with `.optional` and `.multi` variants |
+| `Component` | A provider and a singular token for its own factory result |
 | `Container` | Registry that wires components together and resolves the graph |
 
 ## Quick start
@@ -102,6 +103,20 @@ defComp('name')
 - `.provide(...interfaces)` — declares dependencies; factory args match the declared order
 - `.as(interface)` — declares implemented interfaces; TypeScript enforces the return type
 - The factory can return `T` or `Promise<T>`
+
+Every component is also registered as its own token:
+
+```ts
+const config = defComp('config')(() => ({ dbUrl: 'postgres://localhost/mydb' }));
+
+const database = defComp('database')
+  .provide(config)
+  ((cfg) => new Database(cfg.dbUrl));
+
+container.register(config).register(database);
+
+await container.get(config); // { dbUrl: string }
+```
 
 You can also add an interface after a component is created:
 

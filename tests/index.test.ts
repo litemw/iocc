@@ -45,7 +45,27 @@ describe('basic', () => {
       component.as(IUser);
     }
 
-    expect(component.interfaces).toHaveLength(0);
+    expect(component.interfaces).toHaveLength(1);
+  });
+
+  test('resolves a component by the component object', async () => {
+    const component = defComp('config')(() => ({ str: 'self' }));
+    const c = new Container().register(component);
+
+    const config = await c.get(component);
+    expect(config.str).toBe('self');
+  });
+
+  test('uses a component as a dependency token', async () => {
+    const config = defComp('config')(() => ({ str: 'token' }));
+    const user = defComp('user').provide(config).as(IUser)((cfg) => ({
+      greet: () => `hello ${cfg.str}`,
+    }));
+
+    const c = new Container().register(config).register(user);
+
+    const result = await c.get(user);
+    expect(result.greet()).toBe('hello token');
   });
 
   test('resolves a component with one dep', async () => {

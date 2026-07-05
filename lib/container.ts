@@ -1,4 +1,4 @@
-import { IToken, TypeOf } from './interface';
+import { Token, TypeOf } from './token';
 import { Component } from './component';
 import {
   CircularDependencyError,
@@ -8,7 +8,7 @@ import {
 
 type Entry = {
   readonly name: string;
-  readonly deps: readonly IToken[];
+  readonly deps: readonly Token[];
   readonly factory: (...args: any[]) => any;
 };
 
@@ -40,11 +40,11 @@ export class Container {
     return this;
   }
 
-  get<I extends IToken>(iface: I): Promise<TypeOf<I>> {
+  get<I extends Token>(iface: I): Promise<TypeOf<I>> {
     return this._resolve(iface, new Map());
   }
 
-  private _resolve(iface: IToken, chain: Map<Entry, string>): Promise<any> {
+  private _resolve(iface: Token, chain: Map<Entry, string>): Promise<any> {
     const { key: sym, kind: kind } = iface;
 
     if (kind === 'multi') {
