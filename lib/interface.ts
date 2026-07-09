@@ -1,10 +1,19 @@
 import { Kind, Token } from './token';
 
+/** Named dependency interface with optional and multi-token variants. */
 export type Interface<I = any, K extends Kind = Kind> = Token<I, K> & {
+  /** Variant that resolves all registered implementations as an array. */
   readonly multi: Omit<Interface<I, 'multi'>, 'multi' | 'optional'>;
+  /** Variant that resolves to undefined when no implementation is registered. */
   readonly optional: Omit<Interface<I, 'optional'>, 'multi' | 'optional'>;
 };
 
+/**
+ * Creates a typed dependency interface identified by a unique symbol.
+ *
+ * @param name Name used in diagnostics and derived variant names.
+ * @returns A singular interface token with optional and multi variants.
+ */
 export function defIntf<I>(name: string): Interface<I, 'singular'> {
   return mkIntf<I>(name, Symbol(name));
 }

@@ -1,0 +1,12 @@
+{
+  "name": "@litemw/iocc-examples",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "components": "bun run 01-components.ts",
+    "interfaces": "bun run 02-interfaces.ts",
+    "advanced": "bun run 03-advanced.ts",
+    "errors": "bun run 04-errors.ts",
+    "all": "bun run components && bun run interfaces && bun run advanced && bun run errors"
+  }
+}

@@ -12,11 +12,18 @@ type Entry = {
   readonly factory: (...args: any[]) => any;
 };
 
+/** Dependency injection container that registers components and resolves values. */
 export class Container {
   private readonly _singular = new Map<symbol, Entry>();
   private readonly _multi = new Map<symbol, Entry[]>();
   private readonly _cache = new Map<Entry, Promise<any>>();
 
+  /**
+   * Registers a component under its own token and declared interfaces.
+   *
+   * @param component Component descriptor created by defComp.
+   * @returns This container, for chained registrations.
+   */
   register(component: Component): this {
     const entry: Entry = {
       name: component.name,
@@ -40,6 +47,12 @@ export class Container {
     return this;
   }
 
+  /**
+   * Resolves a token to its value, optional value, or multi-value array.
+   *
+   * @param iface Token, optional token, multi token, or component token to resolve.
+   * @returns Promise for the resolved value typed according to the token kind.
+   */
   get<I extends Token>(iface: I): Promise<TypeOf<I>> {
     return this._resolve(iface, new Map());
   }
