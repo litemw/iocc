@@ -35,11 +35,11 @@ const IDatabase = defIntf<Database>('Database');
 const IUserService = defIntf<UserService>('UserService');
 
 // 2. Define components
-const configComponent = defComp('config')
+const ConfigComponent = defComp('config')
   .as(IConfig)
   .build(() => ({ dbUrl: 'postgres://localhost/mydb' }));
 
-const databaseComponent = defComp('database')
+const DatabaseComponent = defComp('database')
   .provide(IConfig)           // declare dependencies — order = factory arg order
   .as(IDatabase)
   .build(async (config) => {  // factory can be async
@@ -48,16 +48,16 @@ const databaseComponent = defComp('database')
     return db;
   });
 
-const userServiceComponent = defComp('userService')
+const UserServiceComponent = defComp('userService')
   .provide(IConfig, IDatabase)
   .as(IUserService)
   .build((config, db) => new UserService(config, db));
 
 // 3. Register and resolve
 const container = new Container()
-  .register(configComponent)
-  .register(databaseComponent)
-  .register(userServiceComponent);
+  .register(ConfigComponent)
+  .register(DatabaseComponent)
+  .register(UserServiceComponent);
 
 const userService = await container.get(IUserService);
 // → UserService, fully typed
@@ -117,25 +117,25 @@ defComp('name')
 Every component is also registered as its own token:
 
 ```ts
-const config = defComp('config').build(() => ({
+const ConfigComponent = defComp('config').build(() => ({
   dbUrl: 'postgres://localhost/mydb',
 }));
 
-const database = defComp('database')
-  .provide(config)
+const DatabaseComponent = defComp('database')
+  .provide(ConfigComponent)
   .build((cfg) => new Database(cfg.dbUrl));
 
-container.register(config).register(database);
+container.register(ConfigComponent).register(DatabaseComponent);
 
-await container.get(config); // { dbUrl: string }
+await container.get(ConfigComponent); // { dbUrl: string }
 ```
 
 You can also bind a component to one or more interfaces when registering it:
 
 ```ts
-const component = defComp('logger').build(() => new ConsoleLogger());
+const Logger = defComp('logger').build(() => new ConsoleLogger());
 
-container.register(component, ILogger);
+container.register(Logger, ILogger);
 ```
 
 The registration-time form is also type-checked: the component factory result
@@ -147,9 +147,9 @@ must satisfy every interface passed to `register()`.
 const container = new Container();
 
 // Register a component
-container.register(component);           // by its own token and declared interfaces
-container.register(component, IFoo);     // by an extra compatible interface
-container.register(component, IBar, IBaz); // by multiple extra interfaces
+container.register(Component);           // by its own token and declared interfaces
+container.register(Component, IFoo);     // by an extra compatible interface
+container.register(Component, IBar, IBaz); // by multiple extra interfaces
 
 // Resolve
 const value = await container.get(IFoo);           // Promise<Foo>
@@ -164,7 +164,7 @@ const values = await container.get(IFoo.multi);    // Promise<Foo[]>
 ```ts
 const ILogger = defIntf<Logger>('Logger');
 
-const serviceComponent = defComp('service')
+const ServiceComponent = defComp('service')
   .provide(ILogger.optional)
   .build((logger) => {
     // logger is Logger | undefined
@@ -183,10 +183,10 @@ Register multiple implementations under the same interface:
 const IPlugin = defIntf<Plugin>('Plugin');
 
 // Each component contributes one element to the group
-const pluginA = defComp('pluginA').build(() => new PluginA());
-const pluginB = defComp('pluginB').build(() => new PluginB());
+const PluginAComponent = defComp('pluginA').build(() => new PluginA());
+const PluginBComponent = defComp('pluginB').build(() => new PluginB());
 
-const appComponent = defComp('app')
+const AppComponent = defComp('app')
   .provide(IPlugin.multi)
   .build((plugins) => {
     // plugins: Plugin[]
@@ -194,9 +194,9 @@ const appComponent = defComp('app')
   });
 
 const container = new Container()
-  .register(pluginA, IPlugin.multi)
-  .register(pluginB, IPlugin.multi)
-  .register(appComponent);
+  .register(PluginAComponent, IPlugin.multi)
+  .register(PluginBComponent, IPlugin.multi)
+  .register(AppComponent);
 ```
 
 If no implementations are registered, `get(IPlugin.multi)` returns `[]`.
@@ -212,7 +212,7 @@ provide a factory function and call it from the consumer:
 ```ts
 const ICreateRequest = defIntf<() => Request>('CreateRequest');
 
-const createRequestComponent = defComp('createRequest')
+const CreateRequestComponent = defComp('createRequest')
   .as(ICreateRequest)
   .build(() => () => new Request());
 
@@ -225,14 +225,14 @@ const request = createRequest();
 Provide a value with a component factory — useful for configuration objects and test doubles:
 
 ```ts
-const configComponent = defComp('config')
+const ConfigComponent = defComp('config')
   .as(IConfig)
   .build(() => ({ dbUrl: process.env.DATABASE_URL }));
 
 const container = new Container()
-  .register(configComponent)
-  .register(databaseComponent)
-  .register(userServiceComponent);
+  .register(ConfigComponent)
+  .register(DatabaseComponent)
+  .register(UserServiceComponent);
 ```
 
 ## Error handling
