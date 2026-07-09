@@ -20,36 +20,52 @@ const IOptional = defIntf<{ value: number }>('Optional');
 describe('basic', () => {
   test('resolves a component with no deps', async () => {
     const c = new Container().register(
-      defComp('config').as(IConfig)(() => ({ str: 'hello' })),
+      defComp('config')
+        .as(IConfig)
+        .build(() => ({ str: 'hello' })),
     );
 
     const config = await c.get(IConfig);
     expect(config.str).toBe('hello');
   });
 
-  test('adds interface to an already created component', async () => {
-    const component = defComp('config')(() => ({ str: 'late' }));
-    const c = new Container().register(component.as(IConfig));
+  test('registers a component under extra interfaces', async () => {
+    const component = defComp('config').build(() => ({ str: 'registered' }));
+    const c = new Container().register(component, IConfig);
 
     const config = await c.get(IConfig);
-    expect(config.str).toBe('late');
+    expect(config.str).toBe('registered');
   });
 
-  test('checks interface type when adding to an already created component', () => {
-    const component = defComp('config')(() => ({ str: 'late' }));
+  test('registers a component under multiple extra interfaces', async () => {
+    const component = defComp('userConfig').build(() => ({
+      str: 'multi',
+      greet: () => 'hello multi',
+    }));
+    const c = new Container().register(component, IConfig, IUser);
 
-    component.as(IConfig);
+    const config = await c.get(IConfig);
+    const user = await c.get(IUser);
+
+    expect(config.str).toBe('multi');
+    expect(user.greet()).toBe('hello multi');
+  });
+
+  test('checks interface type when registering extra interfaces', () => {
+    const component = defComp('config').build(() => ({ str: 'late' }));
+
+    new Container().register(component, IConfig);
 
     if (false) {
       // @ts-expect-error config component does not implement user interface
-      component.as(IUser);
+      new Container().register(component, IUser);
     }
 
-    expect(component.interfaces).toHaveLength(1);
+    expect(component.tokens).toHaveLength(1);
   });
 
   test('resolves a component by the component object', async () => {
-    const component = defComp('config')(() => ({ str: 'self' }));
+    const component = defComp('config').build(() => ({ str: 'self' }));
     const c = new Container().register(component);
 
     const config = await c.get(component);
@@ -57,10 +73,13 @@ describe('basic', () => {
   });
 
   test('uses a component as a dependency token', async () => {
-    const config = defComp('config')(() => ({ str: 'token' }));
-    const user = defComp('user').provide(config).as(IUser)((cfg) => ({
-      greet: () => `hello ${cfg.str}`,
-    }));
+    const config = defComp('config').build(() => ({ str: 'token' }));
+    const user = defComp('user')
+      .provide(config)
+      .as(IUser)
+      .build((cfg) => ({
+        greet: () => `hello ${cfg.str}`,
+      }));
 
     const c = new Container().register(config).register(user);
 
@@ -70,11 +89,18 @@ describe('basic', () => {
 
   test('resolves a component with one dep', async () => {
     const c = new Container()
-      .register(defComp('config').as(IConfig)(() => ({ str: 'world' })))
       .register(
-        defComp('user').provide(IConfig).as(IUser)((config) => ({
-          greet: () => `hello ${config.str}`,
-        })),
+        defComp('config')
+          .as(IConfig)
+          .build(() => ({ str: 'world' })),
+      )
+      .register(
+        defComp('user')
+          .provide(IConfig)
+          .as(IUser)
+          .build((config) => ({
+            greet: () => `hello ${config.str}`,
+          })),
       );
 
     const user = await c.get(IUser);
@@ -84,10 +110,12 @@ describe('basic', () => {
   test('returns the same instance (singleton)', async () => {
     let calls = 0;
     const c = new Container().register(
-      defComp('config').as(IConfig)(() => {
-        calls++;
-        return { str: 'x' };
-      }),
+      defComp('config')
+        .as(IConfig)
+        .build(() => {
+          calls++;
+          return { str: 'x' };
+        }),
     );
 
     await c.get(IConfig);
@@ -101,10 +129,12 @@ describe('basic', () => {
 describe('async', () => {
   test('resolves async factory', async () => {
     const c = new Container().register(
-      defComp('config').as(IConfig)(async () => {
-        await Promise.resolve();
-        return { str: 'async' };
-      }),
+      defComp('config')
+        .as(IConfig)
+        .build(async () => {
+          await Promise.resolve();
+          return { str: 'async' };
+        }),
     );
 
     const config = await c.get(IConfig);
@@ -114,11 +144,13 @@ describe('async', () => {
   test('async factory called only once (singleton)', async () => {
     let calls = 0;
     const c = new Container().register(
-      defComp('config').as(IConfig)(async () => {
-        calls++;
-        await Promise.resolve();
-        return { str: 'x' };
-      }),
+      defComp('config')
+        .as(IConfig)
+        .build(async () => {
+          calls++;
+          await Promise.resolve();
+          return { str: 'x' };
+        }),
     );
 
     await Promise.all([c.get(IConfig), c.get(IConfig)]);
@@ -137,7 +169,9 @@ describe('optional', () => {
 
   test('returns value when registered', async () => {
     const c = new Container().register(
-      defComp('opt').as(IOptional)(() => ({ value: 42 })),
+      defComp('opt')
+        .as(IOptional)
+        .build(() => ({ value: 42 })),
     );
 
     const result = await c.get(IOptional.optional);
@@ -155,9 +189,12 @@ describe('multi', () => {
   });
 
   test('collects all registered implementations', async () => {
+    const pluginA = defComp('pluginA').build(() => ({ name: 'A' }));
+    const pluginB = defComp('pluginB').build(() => ({ name: 'B' }));
+
     const c = new Container()
-      .register(defComp('pluginA').as(IPlugin.multi)(() => ({ name: 'A' })))
-      .register(defComp('pluginB').as(IPlugin.multi)(() => ({ name: 'B' })));
+      .register(pluginA, IPlugin.multi)
+      .register(pluginB, IPlugin.multi);
 
     const plugins = await c.get(IPlugin.multi);
     expect(plugins).toHaveLength(2);
@@ -165,26 +202,38 @@ describe('multi', () => {
   });
 
   test('multi entry receives deps', async () => {
+    const pluginA = defComp('pluginA')
+      .provide(IConfig)
+      .build((config) => ({
+        name: `${config.str}-A`,
+      }));
+
     const c = new Container()
-      .register(defComp('config').as(IConfig)(() => ({ str: 'prefix' })))
       .register(
-        defComp('pluginA').provide(IConfig).as(IPlugin.multi)((config) => ({
-          name: `${config.str}-A`,
-        })),
-      );
+        defComp('config')
+          .as(IConfig)
+          .build(() => ({ str: 'prefix' })),
+      )
+      .register(pluginA, IPlugin.multi);
 
     const [plugin] = await c.get(IPlugin.multi);
     expect(plugin.name).toBe('prefix-A');
   });
 
   test('multi dependency is passed as array', async () => {
+    const pluginA = defComp('pluginA').build(() => ({ name: 'A' }));
+    const pluginB = defComp('pluginB').build(() => ({ name: 'B' }));
+
     const c = new Container()
-      .register(defComp('pluginA').as(IPlugin.multi)(() => ({ name: 'A' })))
-      .register(defComp('pluginB').as(IPlugin.multi)(() => ({ name: 'B' })))
+      .register(pluginA, IPlugin.multi)
+      .register(pluginB, IPlugin.multi)
       .register(
-        defComp('config').provide(IPlugin.multi).as(IConfig)((plugins) => ({
-          str: plugins.map((plugin) => plugin.name).join(','),
-        })),
+        defComp('config')
+          .provide(IPlugin.multi)
+          .as(IConfig)
+          .build((plugins) => ({
+            str: plugins.map((plugin) => plugin.name).join(','),
+          })),
       );
 
     const config = await c.get(IConfig);
@@ -201,10 +250,11 @@ describe('errors', () => {
   });
 
   test('throws on duplicate singular registration', () => {
+    const a = defComp('a').build(() => ({ str: 'a' }));
+    const b = defComp('b').build(() => ({ str: 'b' }));
+
     expect(() =>
-      new Container()
-        .register(defComp('a').as(IConfig)(() => ({ str: 'a' })))
-        .register(defComp('b').as(IConfig)(() => ({ str: 'b' }))),
+      new Container().register(a, IConfig).register(b, IConfig),
     ).toThrow(InterfaceAlreadyRegisteredError);
   });
 
@@ -214,8 +264,18 @@ describe('errors', () => {
 
     expect(() =>
       new Container()
-        .register(defComp('a').provide(IB).as(IA)(() => ({})))
-        .register(defComp('b').provide(IA).as(IB)(() => ({})))
+        .register(
+          defComp('a')
+            .provide(IB)
+            .as(IA)
+            .build(() => ({})),
+        )
+        .register(
+          defComp('b')
+            .provide(IA)
+            .as(IB)
+            .build(() => ({})),
+        )
         .get(IA),
     ).toThrow(CircularDependencyError);
   });

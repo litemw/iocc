@@ -15,33 +15,38 @@ const IUserService = defIntf<{
 }>('UserService');
 
 // .as(...) registers the component under an interface token.
-const ConfigComponent = defComp('config').as(IConfig)(() => {
-  return {
-    serviceName: 'Users',
-  };
-});
+const ConfigComponent = defComp('config')
+  .as(IConfig)
+  .build(() => {
+    return {
+      serviceName: 'Users',
+    };
+  });
 
 // The factory return type is checked against ILogger by TypeScript.
-const LoggerComponent = defComp('logger').as(ILogger)(() => {
-  return {
-    info(message) {
-      console.log(`[info] ${message}`);
-    },
-  };
-});
+const LoggerComponent = defComp('logger')
+  .as(ILogger)
+  .build(() => {
+    return {
+      info(message) {
+        console.log(`[info] ${message}`);
+      },
+    };
+  });
 
 // Interface tokens can be used as dependencies, not only concrete components.
 // The factory receives Config and Logger values in the same order.
 const UserServiceComponent = defComp('userService')
   .provide(IConfig, ILogger)
-  .as(IUserService)((config, logger) => {
-  return {
-    welcome(userName) {
-      logger.info(`Greeting ${userName}`);
-      return `Welcome to ${config.serviceName}, ${userName}`;
-    },
-  };
-});
+  .as(IUserService)
+  .build((config, logger) => {
+    return {
+      welcome(userName) {
+        logger.info(`Greeting ${userName}`);
+        return `Welcome to ${config.serviceName}, ${userName}`;
+      },
+    };
+  });
 
 const container = new Container()
   .register(ConfigComponent)

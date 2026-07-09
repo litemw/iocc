@@ -1,4 +1,4 @@
-import { Token, TypeOf } from './token';
+import { ImplOf, Token, TypeOf } from './token';
 import { Component } from './component';
 import {
   CircularDependencyError,
@@ -12,6 +12,14 @@ type Entry = {
   readonly factory: (...args: any[]) => any;
 };
 
+type TokenAssert<Ret, I extends Token> = Ret extends ImplOf<I> ? I : never;
+
+type TokenTupleAssert<Ret, Tokens extends readonly Token[]> = {
+  [K in keyof Tokens]: Tokens[K] extends Token
+    ? TokenAssert<Ret, Tokens[K]>
+    : never;
+};
+
 /** Dependency injection container that registers components and resolves values. */
 export class Container {
   private readonly _singular = new Map<symbol, Entry>();
@@ -19,19 +27,25 @@ export class Container {
   private readonly _cache = new Map<Entry, Promise<any>>();
 
   /**
-   * Registers a component under its own token and declared interfaces.
+   * Registers a component under its own token, declared tokens, and extra tokens.
    *
    * @param component Component descriptor created by defComp.
+   * @param tokens Additional compatible tokens to register the component under.
    * @returns This container, for chained registrations.
    */
-  register(component: Component): this {
+  register(component: Component): this;
+  register<Ret, const Tokens extends readonly Token[]>(
+    component: Component<any, Ret>,
+    ...tokens: Tokens & TokenTupleAssert<Ret, Tokens>
+  ): this;
+  register(component: Component, ...tokens: Token[]): this {
     const entry: Entry = {
       name: component.name,
       deps: component.deps,
       factory: component.factory,
     };
 
-    for (const iface of component.interfaces) {
+    for (const iface of [...component.tokens, ...tokens]) {
       if (iface.kind === 'multi') {
         const list = this._multi.get(iface.key) ?? [];
         list.push(entry);

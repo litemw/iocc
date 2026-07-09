@@ -20,12 +20,16 @@ try {
 
 // Singular interfaces can have only one registered implementation.
 try {
-  const ConfigA = defComp('configA').as(IConfig)(() => {
-    return { value: 'A' };
-  });
-  const ConfigB = defComp('configB').as(IConfig)(() => {
-    return { value: 'B' };
-  });
+  const ConfigA = defComp('configA')
+    .as(IConfig)
+    .build(() => {
+      return { value: 'A' };
+    });
+  const ConfigB = defComp('configB')
+    .as(IConfig)
+    .build(() => {
+      return { value: 'B' };
+    });
 
   new Container().register(ConfigA).register(ConfigB);
 } catch (error) {
@@ -39,12 +43,18 @@ const IB = defIntf<object>('B');
 
 // A -> B -> A is detected before any factory result is returned.
 try {
-  const ComponentA = defComp('componentA').provide(IB).as(IA)(() => {
-    return {};
-  });
-  const ComponentB = defComp('componentB').provide(IA).as(IB)(() => {
-    return {};
-  });
+  const ComponentA = defComp('componentA')
+    .provide(IB)
+    .as(IA)
+    .build(() => {
+      return {};
+    });
+  const ComponentB = defComp('componentB')
+    .provide(IA)
+    .as(IB)
+    .build(() => {
+      return {};
+    });
 
   await new Container().register(ComponentA).register(ComponentB).get(IA);
 } catch (error) {
