@@ -37,6 +37,7 @@ export type ComponentBuilder<
    * @returns A builder constrained to factories returning that interface type.
    */
   as<I extends Token>(i: I): ComponentBuilder<Deps, AsType & ImplOf<I>>;
+
   /**
    * Finalizes the component declaration with a factory.
    *

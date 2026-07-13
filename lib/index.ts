@@ -8,6 +8,8 @@ export { defComp } from './component';
 
 export { Container } from './container';
 
+export type { ContainerHooks } from './hooks';
+
 export {
   CircularDependencyError,
   ContainerError,

@@ -1,6 +1,6 @@
 {
   "name": "@litemw/iocc",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "author": "VladDotH",
   "repository": {
     "type": "git",
@@ -32,7 +32,7 @@
   "bugs": {
     "url": "https://github.com/litemw/iocc/issues"
   },
-  "description": "IOC container for litemw ecosystem",
+  "description": "Lightweight IOC container",
   "directories": {
     "lib": "lib"
   },
