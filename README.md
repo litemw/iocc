@@ -1,21 +1,37 @@
 # @litemw/iocc
 
-Type-safe IoC container for the LiteMW ecosystem, inspired by [dig](https://github.com/uber-go/dig).
+[![CI](https://github.com/litemw/iocc/actions/workflows/ci.yml/badge.svg)](https://github.com/litemw/iocc/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@litemw/iocc.svg)](https://www.npmjs.com/package/@litemw/iocc)
+[![coverage](https://codecov.io/github/litemw/iocc/graph/badge.svg)](https://app.codecov.io/github/litemw/iocc)
+[![license](https://img.shields.io/npm/l/@litemw/iocc.svg)](./LICENSE)
 
-- **Zero dependencies**
-- **Type-safe** — `get(IFoo)` returns `Foo`, no casts
-- **Async-first** — factories can be `async`, `get()` always returns `Promise<T>`
-- **Singleton by default** — factories are called once and values are cached
+A lightweight, type-safe IoC container, inspired by [dig](https://github.com/uber-go/dig).
 
-## Install
+🪶 **Zero dependencies** — no runtime deps, tiny footprint
+
+🛡️ **Type-safe** — `get(IFoo)` returns `Foo`, no casts
+
+⚡ **Fast** — plain `Map` lookups and a flat resolution graph, no reflection or decorators
+
+⏳ **Async-first** — factories can be `async`, `get()` always returns `Promise<T>`
+
+♻️ **Singleton by default** — factories are called once and values are cached
+
+## 📦 Install
 
 ```sh
 npm install @litemw/iocc
 # or
+pnpm add @litemw/iocc
+# or
+yarn add @litemw/iocc
+# or
 bun add @litemw/iocc
+# or
+deno add npm:@litemw/iocc
 ```
 
-## Core concepts
+## 🧩 Core concepts
 
 | Concept | Description |
 |---|---|
@@ -24,7 +40,7 @@ bun add @litemw/iocc
 | `Component` | A provider and a singular token for its own factory result |
 | `Container` | Registry that wires components together and resolves the graph |
 
-## Quick start
+## 🚀 Quick start
 
 ```ts
 import { Container, defComp, defIntf } from '@litemw/iocc';
@@ -63,7 +79,7 @@ const userService = await container.get(IUserService);
 // → UserService, fully typed
 ```
 
-## Examples
+## 🧪 Examples
 
 Runnable examples live in [`examples/`](./examples):
 
@@ -72,7 +88,7 @@ cd examples
 bun run all
 ```
 
-## API
+## 📖 API
 
 ### `defIntf<T>(name)`
 
@@ -159,7 +175,7 @@ const values = await container.get(IFoo.multi);    // Promise<Foo[]>
 
 `register()` returns `this`, so calls can be chained.
 
-## Optional dependencies
+## ❓ Optional dependencies
 
 ```ts
 const ILogger = defIntf<Logger>('Logger');
@@ -175,7 +191,7 @@ const ServiceComponent = defComp('service')
 
 If `ILogger` is not registered, `logger` will be `undefined`. No error is thrown.
 
-## Value groups (multi)
+## 🧬 Value groups (multi)
 
 Register multiple implementations under the same interface:
 
@@ -204,7 +220,7 @@ If no implementations are registered, `get(IPlugin.multi)` returns `[]`.
 Even though `get(IPlugin.multi)` resolves to `Plugin[]`, each component
 registered under `IPlugin.multi` still returns a single `Plugin`.
 
-## Factories as dependencies
+## 🏭 Factories as dependencies
 
 Components are cached after the first resolution. If you need a fresh value on demand,
 provide a factory function and call it from the consumer:
@@ -220,7 +236,7 @@ const createRequest = await container.get(ICreateRequest);
 const request = createRequest();
 ```
 
-## Values
+## 🧱 Values
 
 Provide a value with a component factory — useful for configuration objects and test doubles:
 
@@ -235,7 +251,7 @@ const container = new Container()
   .register(UserServiceComponent);
 ```
 
-## Error handling
+## ⚠️ Error handling
 
 | Situation | Error |
 |---|---|
@@ -243,6 +259,6 @@ const container = new Container()
 | `register()` duplicate | `Interface "Foo" is already registered` |
 | Circular dependency | `Circular dependency detected: A → B → A` |
 
-## License
+## 📄 License
 
 MIT
