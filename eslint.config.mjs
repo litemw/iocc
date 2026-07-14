@@ -9,6 +9,7 @@ export default [
   ...tsPlugin.configs['flat/recommended'],
   prettierRecommended,
   {
+    files: ["**/*.ts"],
     languageOptions: {
       parserOptions: {
         projectService: true,
